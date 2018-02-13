@@ -83,11 +83,11 @@ handle_call({add_destination, Name, DP, Dest}, _From, #st{tab = T} = St) ->
                     {reply, ok, St};
                 false ->
                     M1 = M#metric{destinations = [Dest|Ds]},
-                    ets:insert(T, M1),
+                    ets_insert(T, M1),
                     {reply, ok, St}
             end;
         [] ->
-            ets:insert(T, #metric{key = {Name, DP},
+            ets_insert(T, #metric{key = {Name, DP},
                                   destinations = [Dest]}),
             {reply, ok, St}
     end;
@@ -96,7 +96,7 @@ handle_call({del_destination, Name, DP, Dest}, _From, #st{tab = T} = St) ->
               [#metric{destinations = Ds} = M] ->
                   case lists:member(Dest, Ds) of
                       true ->
-                          ets:insert(T, M#metric{destinations = Ds -- [Dest]}),
+                          ets_insert(T, M#metric{destinations = Ds -- [Dest]}),
                           true;
                 false ->
                     false
@@ -170,10 +170,16 @@ make_destinations(Found, Actions0, Tab) ->
     Dests = mk_dests_(Actions0),
     lists:foreach(
       fun({Metrics, DPs}) ->
-              [ets:insert(Tab, #metric{key = {N,D}, destinations = Dests})
+              [ets_insert_new(Tab, #metric{key = {N,D}, destinations = Dests})
                || {N, _, _} <- Metrics,
                   D <- DPs]
       end, Found).
+
+ets_insert(Tab, Obj) ->
+    ets:insert(Tab, Obj).
+
+ets_insert_new(Tab, Obj) ->
+    ets:insert_new(Tab, Obj).
 
 mk_dests_(Txt) ->
     case ordsets:from_list([binary_to_existing_atom(B, latin1)

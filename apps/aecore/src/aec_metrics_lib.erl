@@ -61,11 +61,18 @@ parse_part(status, <<"status=", St/binary>>, Acc) ->
                 end,
     Acc#{status => NewStatus};
 parse_part(dps, DPsBin, #{dps := DPs} = Acc) ->
-    NewDPs = merge([binary_to_existing_atom(D,latin1)
+    NewDPs = merge([to_atom_or_int(D)
                     || D <- re:split(DPsBin, ",")], DPs),
     Acc#{dps => NewDPs};
 parse_part(name, S, Acc) ->
     Acc#{name => S}.
+
+to_atom_or_int(D) ->
+    try binary_to_existing_atom(D, utf8)
+    catch
+        error:_ ->
+            binary_to_integer(D)
+    end.
 
 merge([_|_] = DPs, default) ->
     DPs;

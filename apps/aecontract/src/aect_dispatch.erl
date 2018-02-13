@@ -8,14 +8,26 @@
 -module(aect_dispatch).
 
 %% API
--export([ call/4 ]).
+-export([ call/4
+	, encode_call_data/4]).
 
 
 call(<<"ring">>, Code, Function, Argument) ->
     aect_ring:simple_call(Code, Function, Argument);
 call(<<"evm">>, Code, _, Argument) ->
+    file:write_file("/home/happi/tmp/out_call.txt",
+		  io_lib:format("~p~n", [Argument])),
+   
     aect_evm:call(Code, Argument);
 call(_, _, _, _) ->
+    {error, <<"Unknown call ABI">>}.
+
+
+encode_call_data(<<"ring">>, Code, Function, Argument) ->
+    aect_ring:encode_call_data(Code, Function, Argument);
+encode_call_data(<<"evm">>, Code, Function, Argument) ->
+    aect_evm:encode_call_data(Code, Function, Argument);
+encode_call_data(_, _, _, _) ->
     {error, <<"Unknown call ABI">>}.
 
 

@@ -224,6 +224,8 @@ handle_request('CompileContract', Req, _Context) ->
     end;
 
 handle_request('CallContract', Req, _Context) ->
+  file:write_file("/home/happi/tmp/out.txt",
+		  io_lib:format("~p~n", [Req])),
     case Req of
         #{'ContractCallInput' :=
               #{ <<"abi">> := ABI
@@ -242,11 +244,12 @@ handle_request('CallContract', Req, _Context) ->
 handle_request('EncodeCalldata', Req, _Context) ->
     case Req of
         #{'ContractCallInput' :=
-              #{ <<"code">> := Code
+              #{ <<"abi">>  := ABI
+	       , <<"code">> := Code
                , <<"function">> := Function
                , <<"arg">> := Argument }} ->
             %% TODO: Handle other languages
-            case aect_ring:encode_call_data(Code, Function, Argument) of
+            case aect_dispatch:encode_call_data(ABI, Code, Function, Argument) of
                 {ok, Result} ->
                     {200, [], #{ calldata => Result}};
                 {error, ErrorMsg} ->

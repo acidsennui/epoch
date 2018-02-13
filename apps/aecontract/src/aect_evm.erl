@@ -8,7 +8,8 @@
 -module(aect_evm).
 
 -export([ call/2
-          execute_call/2
+	, encode_call_data/3
+	, execute_call/2
         ]).
 
 
@@ -24,8 +25,12 @@ hex_nibble(X) ->
        true   -> X+87
     end.
 
+-spec encode_call_data(binary(), binary(), binary()) -> {ok, binary()} | {error, binary()}.
+encode_call_data(Contract, Function, Argument) ->
+    {ok, <<Function/binary, Argument/binary>>}.
+
 -spec call(binary(), binary()) -> {ok, binary()} | {error, binary()}.
-simple_call(Code, CallData) ->
+call(Code, CallData) ->
     Spec = #{ code => Code
             , address => 0
             , caller => 0
@@ -40,10 +45,17 @@ simple_call(Code, CallData) ->
             , currentNumber => 1
             , currentTimestamp => 1
             },
-    case execute_call(Spec, false) of
+    try execute_call(Spec, false) of
         #{ out := Out } ->
+            file:write_file("/home/happi/tmp/call_res.txt",
+	        io_lib:format("~p~n", [hexstring_encode(Out)])),
             {ok, hexstring_encode(Out)};
-        E -> {error, list_to_binary(io_lib:format("~p", [E]))}
+        E ->
+	file:write_file("/home/happi/tmp/out.txt", io_lib:format("~p~n", [E])),
+	{error, list_to_binary(io_lib:format("~p", [E]))}
+    catch T:E ->
+	file:write_file("/home/happi/tmp/error_out.txt", io_lib:format("~p:~p~n", [T,E])),
+	{error, list_to_binary(io_lib:format("~p", [E]))}
     end.
 
 

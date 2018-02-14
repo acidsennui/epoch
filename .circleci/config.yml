@@ -90,7 +90,7 @@ jobs:
       - *restore_rebar_cache
       - run:
           name: Build
-          command: ./rebar3 as test do release
+          command: MAKEFLAGS='-j2' ./rebar3 as test do release
       - save_cache:
           key: *build_cache_key
           paths:
@@ -102,87 +102,25 @@ jobs:
           key: *rebar_cache_key
           paths:
             - .cache/rebar3
-
-  test:
+  build2:
     <<: *container_config
     steps:
       - checkout
       - *restore_rebar_cache
-      - *restore_build_cache
       - run:
-          name: Test
-          command: |
-            epmd -daemon
-            make test
-      - store_test_results:
-          path: _build/test/logs
-      - store_artifacts:
-          path: _build/test/logs
-
-  eunit:
-    <<: *container_config
-    steps:
-      - checkout
-      - *restore_rebar_cache
-      - *restore_build_cache
-      - run:
-          name: Test
-          command: |
-            epmd -daemon
-            make eunit
-
-  static_analysis:
-    <<: *container_config
-    steps:
-      - checkout
-      - *restore_rebar_cache
-      - *restore_build_cache
-      - run: ./rebar3 edoc
-      - restore_cache:
-          keys:
-            - dialyzer-cache-v2-{{ .Branch }}-{{ .Revision }}
-            - dialyzer-cache-v2-{{ .Branch }}-
-            - dialyzer-cache-v2-
-      - run:
-          name: Update dialyzer PLT
-          command: make dialyzer-install
+          name: Build
+          command: MAKEFLAGS='-j2' ./rebar3 as test do release
       - save_cache:
-          key: dialyzer-cache-v2-{{ .Branch }}-{{ .Revision }}
+          key: *build_cache_key
           paths:
-            - _build/default/rebar3_20.2.2_plt
-      - run: make dialyzer
-      - run: make swagger-check
-
-  linux_package:
-    <<: *container_config
-    steps:
-      - checkout
-      - run: id
-      - *build_package
-      - *test_package
-      - *store_test_package_artifacts
-      - *store_package_artifacts
-      - persist_to_workspace:
-          root: *packages_workspace
+            - "_build"
+            - "apps/aecuckoo/c_src"
+            - "apps/aecuckoo/priv/bin"
+            - "apps/aecuckoo/priv/lib"
+      - save_cache:
+          key: *rebar_cache_key
           paths:
-            - "*.tar.gz"
-
-  osx_package:
-    macos:
-      xcode: "9.0"
-    working_directory: ~/epoch
-    steps:
-      - checkout
-      - run:
-          name: Install required tools
-          command: |
-            brew update
-            brew install libsodium
-            brew install erlang
-      - *build_package
-      - *test_package
-      - *store_test_package_artifacts
-      - *store_package_artifacts
+            - .cache/rebar3
 
   uat_tests:
     <<: *container_config
@@ -251,6 +189,16 @@ workflows:
                 - env/dev2
             tags:
               only: /^v.*$/
+      - build2:
+          requires: ~
+          filters:
+            branches:
+              ignore:
+                - env/dev1
+                - env/dev2
+            tags:
+              only: /^v.*$/
+
 
       - test:
           requires:

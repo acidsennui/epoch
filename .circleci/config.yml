@@ -232,10 +232,6 @@ workflows:
             tags:
               only: /^v.*$/
 
-      - linux_package:
-          filters:
-            tags:
-              only: /^v.*$/
 
       - osx_package:
           requires:

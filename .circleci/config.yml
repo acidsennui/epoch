@@ -199,7 +199,6 @@ workflows:
             tags:
               only: /^v.*$/
 
-
       - test:
           requires:
             - build

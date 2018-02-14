@@ -232,7 +232,6 @@ workflows:
             tags:
               only: /^v.*$/
 
-
       - osx_package:
           requires:
             - test
